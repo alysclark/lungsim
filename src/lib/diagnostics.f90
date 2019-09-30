@@ -9,54 +9,54 @@
 !>
 !>\Description
 !> This module handles diagnostics
-module diagnostics
+MODULE diagnostics
 
-  implicit none
-  logical :: diagnostics_on
+  IMPLICIT NONE
+  LOGICAL :: diagnostics_on
 
-  private
-  public enter_exit, get_diagnostics_on, set_diagnostics_on
+  PRIVATE
+  PUBLIC enter_exit, get_diagnostics_on, set_diagnostics_on
 
-contains
+CONTAINS
 
 !!!######################################################################
 
-  subroutine enter_exit(sub_name, state)
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_ENTER_EXIT" :: ENTER_EXIT
-    use other_consts, only: MAX_SUBNAME_LEN
-    implicit none
+  SUBROUTINE enter_exit(sub_name, state)
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_ENTER_EXIT" :: ENTER_EXIT
+    USE other_consts, ONLY: MAX_SUBNAME_LEN
+    IMPLICIT NONE
 
-    integer,intent(in) :: state
-    character(len=MAX_SUBNAME_LEN), intent(in) :: sub_name
+    INTEGER,INTENT(in) :: state
+    CHARACTER(len=MAX_SUBNAME_LEN), INTENT(in) :: sub_name
 
-    if(diagnostics_on)then
-      if(state.eq.1)then
-        write(*,'('' Entering subroutine '',60A,'':'')') sub_name(1:MAX_SUBNAME_LEN)
-      else
-        write(*,'('' Exiting subroutine '',60A,'':'')') sub_name(1:MAX_SUBNAME_LEN)
-      endif
-    endif
+    IF(diagnostics_on)THEN
+       IF(state.EQ.1)THEN
+          WRITE(*,'('' Entering subroutine '',60A,'':'')') sub_name(1:MAX_SUBNAME_LEN)
+       ELSE
+          WRITE(*,'('' Exiting subroutine '',60A,'':'')') sub_name(1:MAX_SUBNAME_LEN)
+       ENDIF
+    ENDIF
 
-  end subroutine enter_exit
+  END SUBROUTINE enter_exit
 
-  subroutine set_diagnostics_on(state)
-  !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"SO_SET_DIAGNOSTICS_ON":: SET_DIAGNOSTICS_ON
-    implicit none
+  SUBROUTINE set_diagnostics_on(state)
+    !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"SO_SET_DIAGNOSTICS_ON":: SET_DIAGNOSTICS_ON
+    IMPLICIT NONE
 
-    logical, intent(in) :: state
+    LOGICAL, INTENT(in) :: state
 
     diagnostics_on = state
 
-  end subroutine set_diagnostics_on
+  END SUBROUTINE set_diagnostics_on
 
-  subroutine get_diagnostics_on(state)
-  !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"SO_GET_DIAGNOSTICS_ON":: GET_DIAGNOSTICS_ON
-    implicit none
+  SUBROUTINE get_diagnostics_on(state)
+    !DEC$ ATTRIBUTES DLLEXPORT, ALIAS:"SO_GET_DIAGNOSTICS_ON":: GET_DIAGNOSTICS_ON
+    IMPLICIT NONE
 
-    logical :: state
+    LOGICAL :: state
 
     state = diagnostics_on
 
-  end subroutine get_diagnostics_on
+  END SUBROUTINE get_diagnostics_on
 
-end module diagnostics
+END MODULE diagnostics

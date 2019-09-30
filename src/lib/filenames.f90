@@ -9,10 +9,10 @@
 !>
 
 !> This module handles all read and write filenames.
-module filenames
-  use other_consts, only : MAX_FILENAME_LEN
-  implicit none
- !Module parameters
+MODULE filenames
+  USE other_consts, ONLY : MAX_FILENAME_LEN
+  IMPLICIT NONE
+  !Module parameters
 
   CHARACTER(LEN=MAX_FILENAME_LEN) :: AIRWAY_ELEMFILE,AIRWAY_NODEFILE,AIRWAY_FIELDFILE, &
        AIRWAY_EXNODEFILE,AIRWAY_EXELEMFILE,AIRWAYFIELD_EXELEMFILE,&
@@ -24,7 +24,7 @@ module filenames
        FLOW_GEOMETRY_FILE,MAIN_PARAMETER_FILE,FLOW_PARAMETER_FILE,&
        FLOW_EXELEMFILE, FLOW_EXNODEFILE, FLOW_RADIUS_EXELEM, EMPTY_FILENAME
 
-public AIRWAY_ELEMFILE,AIRWAY_NODEFILE,AIRWAY_FIELDFILE, &
+  PUBLIC AIRWAY_ELEMFILE,AIRWAY_NODEFILE,AIRWAY_FIELDFILE, &
        AIRWAY_EXNODEFILE,AIRWAY_EXELEMFILE,AIRWAYFIELD_EXELEMFILE,&
        AIRWAY_MESHFILE, &
        ARTERY_ELEMFILE,ARTERY_NODEFILE,ARTERY_FIELDFILE, &
@@ -39,199 +39,199 @@ public AIRWAY_ELEMFILE,AIRWAY_NODEFILE,AIRWAY_FIELDFILE, &
 
   !Interfaces
 
-  private
-  public read_geometry_main
-  public read_geometry_evaluate_flow
-  public get_filename
+  PRIVATE
+  PUBLIC read_geometry_main
+  PUBLIC read_geometry_evaluate_flow
+  PUBLIC get_filename
 
-contains
-!
-!###################################################################################
-!
-!> reads in output filenames typically used to analyse and visualise ventilation model results
-  subroutine read_geometry_evaluate_flow()
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_READ_GEOMETRY_EVALUATE_FLOW" :: READ_GEOMETRY_EVALUATE_FLOW
+CONTAINS
+  !
+  !###################################################################################
+  !
+  !> reads in output filenames typically used to analyse and visualise ventilation model results
+  SUBROUTINE read_geometry_evaluate_flow()
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_READ_GEOMETRY_EVALUATE_FLOW" :: READ_GEOMETRY_EVALUATE_FLOW
 
-    use diagnostics, only: enter_exit
-    implicit none
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
 
     ! Input related variables
-    character(len=255) :: buffer, label
-    integer :: pos
-    integer, parameter :: fh = 15
-    integer :: ios
-    integer :: line
-    character(len=60) :: sub_name
+    CHARACTER(len=255) :: buffer, label
+    INTEGER :: pos
+    INTEGER, PARAMETER :: fh = 15
+    INTEGER :: ios
+    INTEGER :: line
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'read_geometry_evaluate_flow'
-    call enter_exit(sub_name,1)
-    
+    CALL enter_exit(sub_name,1)
+
     ios = 0
     line = 0
 
-    open(fh, file='Parameters/geometry_evaluate_flow.txt')
+    OPEN(fh, file='Parameters/geometry_evaluate_flow.txt')
 
     ! ios is negative if an end of record condition is encountered or if
     ! an endfile condition was detected.  It is positive if an error was
     ! detected.  ios is zero otherwise.
 
-    do while (ios == 0)
-       read(fh, '(A)', iostat=ios) buffer
-       if (ios == 0) then
+    DO WHILE (ios == 0)
+       READ(fh, '(A)', iostat=ios) buffer
+       IF (ios == 0) THEN
           line = line + 1
 
           ! Find the first instance of whitespace.  Split label and data.
-          pos = scan(buffer, '    ')
+          pos = SCAN(buffer, '    ')
           label = buffer(1:pos)
           buffer = buffer(pos+1:)
 
-          select case (label)
-          case ('exelem')
-             read(buffer, *, iostat=ios) AIRWAYFIELD_EXELEMFILE
-          case ('exnode')
-             read(buffer, *, iostat=ios) TERMINAL_EXNODEFILE
-          case ('flowexelem')
-             read(buffer, *, iostat=ios) FLOW_EXELEMFILE
-          case ('flowexnode')
-             read(buffer, *, iostat=ios) FLOW_EXNODEFILE
-          case ('flowradiusexelem')
-             read(buffer, *, iostat=ios) FLOW_RADIUS_EXELEM
-          case default
+          SELECT CASE (label)
+          CASE ('exelem')
+             READ(buffer, *, iostat=ios) AIRWAYFIELD_EXELEMFILE
+          CASE ('exnode')
+             READ(buffer, *, iostat=ios) TERMINAL_EXNODEFILE
+          CASE ('flowexelem')
+             READ(buffer, *, iostat=ios) FLOW_EXELEMFILE
+          CASE ('flowexnode')
+             READ(buffer, *, iostat=ios) FLOW_EXNODEFILE
+          CASE ('flowradiusexelem')
+             READ(buffer, *, iostat=ios) FLOW_RADIUS_EXELEM
+          CASE default
              !print *, 'Skipping invalid label at line', line
-          end select
-       end if
-    end do
+          END SELECT
+       END IF
+    END DO
 
-    close(fh)
-    call enter_exit(sub_name,2)
+    CLOSE(fh)
+    CALL enter_exit(sub_name,2)
 
-  end subroutine read_geometry_evaluate_flow
+  END SUBROUTINE read_geometry_evaluate_flow
 
   !###################################################################################
 
-  subroutine read_geometry_main()
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_READ_GEOMETRY_MAIN" :: READ_GEOMETRY_MAIN
+  SUBROUTINE read_geometry_main()
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_READ_GEOMETRY_MAIN" :: READ_GEOMETRY_MAIN
 
-    use diagnostics, only: enter_exit
-    implicit none
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
 
     ! Input related variables
-    character(len=255) :: buffer, label
-    integer :: pos
-    integer, parameter :: fh = 15
-    integer :: ios
-    integer :: line
-    character(len=60) :: sub_name
-!
-! ###########################################################################
-!
-!> Reads in input and output filenames required to generate and export a geometry
+    CHARACTER(len=255) :: buffer, label
+    INTEGER :: pos
+    INTEGER, PARAMETER :: fh = 15
+    INTEGER :: ios
+    INTEGER :: line
+    CHARACTER(len=60) :: sub_name
+    !
+    ! ###########################################################################
+    !
+    !> Reads in input and output filenames required to generate and export a geometry
     sub_name = 'read_geometry_main'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
 
     ios = 0
     line = 0
-    open(fh, file='Parameters/geometry_main.txt')
+    OPEN(fh, file='Parameters/geometry_main.txt')
 
     ! ios is negative if an end of record condition is encountered or if
     ! an endfile condition was detected.  It is positive if an error was
     ! detected.  ios is zero otherwise.
 
-    do while (ios == 0)
-       read(fh, '(A)', iostat=ios) buffer
-       if (ios == 0) then
+    DO WHILE (ios == 0)
+       READ(fh, '(A)', iostat=ios) buffer
+       IF (ios == 0) THEN
           line = line + 1
 
           ! Find the first instance of whitespace.  Split label and data.
-          pos = scan(buffer, '    ')
+          pos = SCAN(buffer, '    ')
           label = buffer(1:pos)
           buffer = buffer(pos+1:)
 
-          select case (label)
-          case ('airway_ipnode')
-             read(buffer, *, iostat=ios) AIRWAY_NODEFILE
-          case ('airway_ipelem')
-             read(buffer, *, iostat=ios) AIRWAY_ELEMFILE
-          case ('airway_ipfiel')
-             read(buffer, *, iostat=ios) AIRWAY_FIELDFILE
-          case ('airway_ipmesh')
-             read(buffer, *, iostat=ios) AIRWAY_MESHFILE
-          case ('airway_exnode')
-             read(buffer, *, iostat=ios) AIRWAY_EXNODEFILE
-          case ('airway_exelem')
-             read(buffer, *, iostat=ios) AIRWAY_EXELEMFILE
-          case ('artery_ipnode')
-             read(buffer, *, iostat=ios) ARTERY_NODEFILE
-          case ('artery_ipelem')
-             read(buffer, *, iostat=ios) ARTERY_ELEMFILE
-          case ('artery_ipfiel')
-             read(buffer, *, iostat=ios) ARTERY_FIELDFILE
-          case ('artery_ipmesh')
-             read(buffer, *, iostat=ios) ARTERY_MESHFILE
-          case ('artery_exnode')
-             read(buffer, *, iostat=ios) ARTERY_EXNODEFILE
-          case ('artery_exelem')
-             read(buffer, *, iostat=ios) ARTERY_EXELEMFILE
-          case default
+          SELECT CASE (label)
+          CASE ('airway_ipnode')
+             READ(buffer, *, iostat=ios) AIRWAY_NODEFILE
+          CASE ('airway_ipelem')
+             READ(buffer, *, iostat=ios) AIRWAY_ELEMFILE
+          CASE ('airway_ipfiel')
+             READ(buffer, *, iostat=ios) AIRWAY_FIELDFILE
+          CASE ('airway_ipmesh')
+             READ(buffer, *, iostat=ios) AIRWAY_MESHFILE
+          CASE ('airway_exnode')
+             READ(buffer, *, iostat=ios) AIRWAY_EXNODEFILE
+          CASE ('airway_exelem')
+             READ(buffer, *, iostat=ios) AIRWAY_EXELEMFILE
+          CASE ('artery_ipnode')
+             READ(buffer, *, iostat=ios) ARTERY_NODEFILE
+          CASE ('artery_ipelem')
+             READ(buffer, *, iostat=ios) ARTERY_ELEMFILE
+          CASE ('artery_ipfiel')
+             READ(buffer, *, iostat=ios) ARTERY_FIELDFILE
+          CASE ('artery_ipmesh')
+             READ(buffer, *, iostat=ios) ARTERY_MESHFILE
+          CASE ('artery_exnode')
+             READ(buffer, *, iostat=ios) ARTERY_EXNODEFILE
+          CASE ('artery_exelem')
+             READ(buffer, *, iostat=ios) ARTERY_EXELEMFILE
+          CASE default
              !print *, 'Skipping invalid label at line', line
-          end select
-       end if
-    end do
+          END SELECT
+       END IF
+    END DO
 
-    close(fh)
-    call enter_exit(sub_name,2)
+    CLOSE(fh)
+    CALL enter_exit(sub_name,2)
 
-  end subroutine read_geometry_main
-!
-!#####################################################################################################
-!
-  function get_filename(label) result(str)
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_FILENAME" :: GET_FILENAME
-    use other_consts, only: MAX_FILENAME_LEN, MAX_STRING_LEN
-    implicit none
+  END SUBROUTINE read_geometry_main
+  !
+  !#####################################################################################################
+  !
+  FUNCTION get_filename(label) RESULT(str)
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_FILENAME" :: GET_FILENAME
+    USE other_consts, ONLY: MAX_FILENAME_LEN, MAX_STRING_LEN
+    IMPLICIT NONE
 
-    character(len=MAX_STRING_LEN), intent(in) :: label
-    character(len=MAX_FILENAME_LEN) :: str
+    CHARACTER(len=MAX_STRING_LEN), INTENT(in) :: label
+    CHARACTER(len=MAX_FILENAME_LEN) :: str
 
-    select case (label)
-    case ('airway_ipnode')
+    SELECT CASE (label)
+    CASE ('airway_ipnode')
        str = AIRWAY_NODEFILE
-    case ('airway_ipelem')
+    CASE ('airway_ipelem')
        str = AIRWAY_ELEMFILE
-    case ('airway_ipfiel')
+    CASE ('airway_ipfiel')
        str = AIRWAY_FIELDFILE
-    case ('airway_ipmesh')
+    CASE ('airway_ipmesh')
        str = AIRWAY_MESHFILE
-    case ('airway_exnode')
+    CASE ('airway_exnode')
        str = AIRWAY_EXNODEFILE
-    case ('airway_exelem')
+    CASE ('airway_exelem')
        str = AIRWAY_EXELEMFILE
-    case ('artery_ipnode')
+    CASE ('artery_ipnode')
        str = ARTERY_NODEFILE
-    case ('artery_ipelem')
+    CASE ('artery_ipelem')
        str = ARTERY_ELEMFILE
-    case ('artery_ipfiel')
+    CASE ('artery_ipfiel')
        str = ARTERY_FIELDFILE
-    case ('artery_ipmesh')
+    CASE ('artery_ipmesh')
        str = ARTERY_MESHFILE
-    case ('artery_exnode')
+    CASE ('artery_exnode')
        str = ARTERY_EXNODEFILE
-    case ('artery_exelem')
+    CASE ('artery_exelem')
        str = ARTERY_EXELEMFILE
-    case ('exelem')
+    CASE ('exelem')
        str =  AIRWAYFIELD_EXELEMFILE
-    case ('exnode')
+    CASE ('exnode')
        str =  TERMINAL_EXNODEFILE
-    case ('flowexelem')
+    CASE ('flowexelem')
        str =  FLOW_EXELEMFILE
-    case ('flowexnode')
+    CASE ('flowexnode')
        str =  FLOW_EXNODEFILE
-    case ('flowradiusexelem')
+    CASE ('flowradiusexelem')
        str =  FLOW_RADIUS_EXELEM
-    case default
-       print *, 'Umm I dont know this label, sorry'
+    CASE default
+       PRINT *, 'Umm I dont know this label, sorry'
        str = EMPTY_FILENAME
-    end select
+    END SELECT
 
-  end function get_filename
-end module filenames
+  END FUNCTION get_filename
+END MODULE filenames
