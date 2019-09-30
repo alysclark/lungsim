@@ -9,15 +9,15 @@
 !>
 !>\Description
 !> This module contains definition of constants (note that in the future this should be merged into a 'types' module
-module other_consts
-  use arrays, only: dp
-  implicit none
+MODULE other_consts
+  USE arrays, ONLY: dp
+  IMPLICIT NONE
 
-  integer, parameter :: MAX_FILENAME_LEN = 255, MAX_STRING_LEN = 100, MAX_SUBNAME_LEN = 60
+  INTEGER, PARAMETER :: MAX_FILENAME_LEN = 255, MAX_STRING_LEN = 100, MAX_SUBNAME_LEN = 60
 
-  real(dp), parameter :: PI = 3.14159265358979_dp
-  real(dp), parameter :: TOLERANCE =EPSILON (EPSILON(1.0_dp))
+  REAL(dp), PARAMETER :: PI = 3.14159265358979_dp
+  REAL(dp), PARAMETER :: TOLERANCE =EPSILON (EPSILON(1.0_dp))
 
-  private
-  public MAX_SUBNAME_LEN, MAX_STRING_LEN, MAX_FILENAME_LEN, PI,TOLERANCE
-end module other_consts
+  PRIVATE
+  PUBLIC MAX_SUBNAME_LEN, MAX_STRING_LEN, MAX_FILENAME_LEN, PI,TOLERANCE
+END MODULE other_consts

@@ -10,116 +10,116 @@
 !>\Description
 !> This module handles all all geometry read/write/generation.
 
-module indices
-  implicit none
-!parameters
+MODULE indices
+  IMPLICIT NONE
+  !parameters
   ! indices for elem_ordrs
-  integer :: num_ord=3,no_gen=1,no_hord=2,no_sord=3
+  INTEGER :: num_ord=3,no_gen=1,no_hord=2,no_sord=3
   ! indices for node_fields
-  integer :: num_nj,nj_aw_press,nj_bv_press,nj_conc1,&
-     nj_conc2
+  INTEGER :: num_nj,nj_aw_press,nj_bv_press,nj_conc1,&
+       nj_conc2
   ! indices for elem_field
-  integer ::num_ne,ne_radius,ne_length,ne_vol,&
-      ne_resist,ne_t_resist,ne_Vdot,ne_Vdot0,ne_a_A,&
+  INTEGER ::num_ne,ne_radius,ne_length,ne_vol,&
+       ne_resist,ne_t_resist,ne_Vdot,ne_Vdot0,ne_a_A,&
        ne_dvdt,ne_radius_in,ne_radius_in0,&
        ne_radius_out,ne_radius_out0,ne_group,ne_Qdot
   ! indices for unit_field
-  integer :: num_nu,nu_vol,nu_comp,nu_conc2,nu_Vdot0,nu_Vdot1, &
+  INTEGER :: num_nu,nu_vol,nu_comp,nu_conc2,nu_Vdot0,nu_Vdot1, &
        nu_Vdot2,nu_dpdt,nu_pe,nu_vt,nu_air_press,nu_conc1,nu_vent,&
        nu_vd,nu_perf,nu_blood_press
   !indices for gas exchange field
-! indices for gasex_field
-  integer,parameter :: num_gx = 12
-  integer,parameter :: ng_p_alv_o2=1      ! index for alveolar partial pressure of O2
-  integer,parameter :: ng_p_alv_co2=2     ! index for alveolar partial pressure of CO2
-  integer,parameter :: ng_p_ven_o2=3      ! index for local venous partial pressure of O2
-  integer,parameter :: ng_p_ven_co2=4     ! index for local venous partial pressure of CO2
-  integer,parameter :: ng_p_cap_o2=5      ! index for local end capillary partial pressure of O2
-  integer,parameter :: ng_p_cap_co2=6     ! index for local end capillary partial pressure of CO2
-  integer,parameter :: ng_source_o2=7     ! index for source (flux) of O2
-  integer,parameter :: ng_source_co2=8    ! index for source (flux) of CO2
-  integer,parameter :: ng_Vc=9            ! index for unit's capillary blood volume
-  integer,parameter :: ng_sa=10           ! index for unit's capillary surface area
-  integer,parameter :: ng_tt=11           ! index for transit time in unit
-  integer,parameter :: ng_time=12         ! index for time elapsed for RBC in capillaries
+  ! indices for gasex_field
+  INTEGER,PARAMETER :: num_gx = 12
+  INTEGER,PARAMETER :: ng_p_alv_o2=1      ! index for alveolar partial pressure of O2
+  INTEGER,PARAMETER :: ng_p_alv_co2=2     ! index for alveolar partial pressure of CO2
+  INTEGER,PARAMETER :: ng_p_ven_o2=3      ! index for local venous partial pressure of O2
+  INTEGER,PARAMETER :: ng_p_ven_co2=4     ! index for local venous partial pressure of CO2
+  INTEGER,PARAMETER :: ng_p_cap_o2=5      ! index for local end capillary partial pressure of O2
+  INTEGER,PARAMETER :: ng_p_cap_co2=6     ! index for local end capillary partial pressure of CO2
+  INTEGER,PARAMETER :: ng_source_o2=7     ! index for source (flux) of O2
+  INTEGER,PARAMETER :: ng_source_co2=8    ! index for source (flux) of CO2
+  INTEGER,PARAMETER :: ng_Vc=9            ! index for unit's capillary blood volume
+  INTEGER,PARAMETER :: ng_sa=10           ! index for unit's capillary surface area
+  INTEGER,PARAMETER :: ng_tt=11           ! index for transit time in unit
+  INTEGER,PARAMETER :: ng_time=12         ! index for time elapsed for RBC in capillaries
 
   !model type
-  character(len=60) :: model_type
+  CHARACTER(len=60) :: model_type
 
-public num_ord,no_gen,no_hord,no_sord
+  PUBLIC num_ord,no_gen,no_hord,no_sord
 
-public num_nj,nj_aw_press,nj_bv_press,nj_conc1,nj_conc2
+  PUBLIC num_nj,nj_aw_press,nj_bv_press,nj_conc1,nj_conc2
 
-public num_ne,ne_radius,ne_length,ne_vol,&
-      ne_resist,ne_t_resist,ne_Vdot,ne_Vdot0,ne_a_A,&
-      ne_dvdt,ne_radius_in,ne_radius_in0,ne_radius_out,&
-      ne_radius_out0,ne_group,ne_Qdot
+  PUBLIC num_ne,ne_radius,ne_length,ne_vol,&
+       ne_resist,ne_t_resist,ne_Vdot,ne_Vdot0,ne_a_A,&
+       ne_dvdt,ne_radius_in,ne_radius_in0,ne_radius_out,&
+       ne_radius_out0,ne_group,ne_Qdot
 
-public num_nu,nu_vol,nu_comp, nu_conc2,nu_Vdot0,nu_Vdot1, &
+  PUBLIC num_nu,nu_vol,nu_comp, nu_conc2,nu_Vdot0,nu_Vdot1, &
        nu_Vdot2,nu_dpdt,nu_pe,nu_vt,nu_air_press,&
        nu_conc1,nu_vent,nu_vd,&
        nu_perf,nu_blood_press
 
-public num_gx, ng_p_alv_o2,ng_p_alv_co2,ng_p_ven_o2,ng_p_ven_co2, &
+  PUBLIC num_gx, ng_p_alv_o2,ng_p_alv_co2,ng_p_ven_o2,ng_p_ven_co2, &
        ng_p_cap_o2, ng_p_cap_co2,ng_source_o2,ng_source_co2, &
        ng_Vc, ng_sa, ng_tt, ng_time
 
 
-public model_type
+  PUBLIC model_type
 
-!Interfaces
-private
-public define_problem_type,ventilation_indices, perfusion_indices, get_ne_radius, get_nj_conc1, &
+  !Interfaces
+  PRIVATE
+  PUBLIC define_problem_type,ventilation_indices, perfusion_indices, get_ne_radius, get_nj_conc1, &
        growing_indices
 
-contains
+CONTAINS
 
   !> Define problem type
-  subroutine define_problem_type(PROBLEM_TYPE)
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_DEFINE_PROBLEM_TYPE" :: DEFINE_PROBLEM_TYPE
-    use other_consts, only: MAX_FILENAME_LEN, MAX_STRING_LEN
-    use diagnostics, only: enter_exit
+  SUBROUTINE define_problem_type(PROBLEM_TYPE)
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_DEFINE_PROBLEM_TYPE" :: DEFINE_PROBLEM_TYPE
+    USE other_consts, ONLY: MAX_FILENAME_LEN, MAX_STRING_LEN
+    USE diagnostics, ONLY: enter_exit
 
-    character(len=MAX_FILENAME_LEN),intent(in) :: PROBLEM_TYPE
+    CHARACTER(len=MAX_FILENAME_LEN),INTENT(in) :: PROBLEM_TYPE
 
-    character(len=60) :: sub_name
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'define_problem_type'
-    call enter_exit(sub_name,1)
-    select case (PROBLEM_TYPE)
-      case ('gas_exchange')
-        print *, 'You are solving a gas exchange model, setting up indices'
-        call exchange_indices
-      case ('gas_mix')
-        print *, 'You are solving a gas mixing model, setting up indices'
-        call gasmix_indices
-      case ('gas_transfer')
-        print *, 'You are solving a gas transfer model, setting up indices'
-         call exchange_indices
-      case ('perfusion')
-        print *, 'You are solving a static perfusion model, setting up indices'
-        call perfusion_indices
-      case ('ventilation')
-        print *, 'You are solving a ventilation model, setting up indices'
-        call ventilation_indices
-      case('grow_tree')
-        print *, 'You are solving a growing problem, setting up indices'
-        call growing_indices
-    end select
+    CALL enter_exit(sub_name,1)
+    SELECT CASE (PROBLEM_TYPE)
+    CASE ('gas_exchange')
+       PRINT *, 'You are solving a gas exchange model, setting up indices'
+       CALL exchange_indices
+    CASE ('gas_mix')
+       PRINT *, 'You are solving a gas mixing model, setting up indices'
+       CALL gasmix_indices
+    CASE ('gas_transfer')
+       PRINT *, 'You are solving a gas transfer model, setting up indices'
+       CALL exchange_indices
+    CASE ('perfusion')
+       PRINT *, 'You are solving a static perfusion model, setting up indices'
+       CALL perfusion_indices
+    CASE ('ventilation')
+       PRINT *, 'You are solving a ventilation model, setting up indices'
+       CALL ventilation_indices
+    CASE('grow_tree')
+       PRINT *, 'You are solving a growing problem, setting up indices'
+       CALL growing_indices
+    END SELECT
     model_type=TRIM(PROBLEM_TYPE)
-    call enter_exit(sub_name,2)
-  end subroutine define_problem_type
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE define_problem_type
 
   !>Gas mixing indices
-  subroutine exchange_indices
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GASMIX_INDICES" :: GASMIX_INDICES
+  SUBROUTINE exchange_indices
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GASMIX_INDICES" :: GASMIX_INDICES
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'exchange_indices'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
     ! indices for elem_ordrs. These dont usually change.
     ! indices for node_field
     num_nj=3
@@ -147,19 +147,19 @@ contains
     nu_conc2=7
 
 
-    call enter_exit(sub_name,2)
-  end subroutine exchange_indices
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE exchange_indices
 
   !>Gas mixing indices
-  subroutine gasmix_indices
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GASMIX_INDICES" :: GASMIX_INDICES
+  SUBROUTINE gasmix_indices
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GASMIX_INDICES" :: GASMIX_INDICES
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'gasmix_indices'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
     ! indices for elem_ordrs. These dont usually change.
     ! indices for node_field
     num_nj=3
@@ -189,19 +189,19 @@ contains
     nu_air_press=9
     nu_conc1=10
     nu_vent=11
-    call enter_exit(sub_name,2)
-  end subroutine gasmix_indices
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE gasmix_indices
 
   !> Ventilation indices
-  subroutine ventilation_indices
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_VENTILATION_INDICES" :: VENTILATION_INDICES
+  SUBROUTINE ventilation_indices
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_VENTILATION_INDICES" :: VENTILATION_INDICES
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'ventilation_indices'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
     ! indices for elem_ordrs. These dont usually change.
     ! indices for node_field
     num_nj=2 !number of nodal fields
@@ -228,21 +228,21 @@ contains
     nu_vt=8
     nu_air_press=9
     nu_vent=10
-    call enter_exit(sub_name,2)
-  end subroutine ventilation_indices
-!
-!########################################################################
-!
-!> Growing indices
-  subroutine growing_indices
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GROWING_INDICES" :: GROWING_INDICES
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE ventilation_indices
+  !
+  !########################################################################
+  !
+  !> Growing indices
+  SUBROUTINE growing_indices
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GROWING_INDICES" :: GROWING_INDICES
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'growing_indices'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
     ! indices for elem_ordrs. These dont usually change.
     ! indices for node_field
     num_nj=0 !number of nodal fields
@@ -252,21 +252,21 @@ contains
     ne_length=2 !length of airway
     ! indices for unit_field
     num_nu=0
-    call enter_exit(sub_name,2)
-  end subroutine growing_indices
-!
-!######################################################################
-!
-!> Perfusion indices
-  subroutine perfusion_indices
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_PERFUSION_INDICES" :: PERFUSION_INDICES
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE growing_indices
+  !
+  !######################################################################
+  !
+  !> Perfusion indices
+  SUBROUTINE perfusion_indices
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_PERFUSION_INDICES" :: PERFUSION_INDICES
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
 
     sub_name = 'perfusion_indices'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
 
     ! indices for node_field
     num_nj=1
@@ -287,40 +287,40 @@ contains
     nu_perf=1
     nu_blood_press=2
 
-     call enter_exit(sub_name,2)
-  end subroutine perfusion_indices
+    CALL enter_exit(sub_name,2)
+  END SUBROUTINE perfusion_indices
 
-  function get_ne_radius() result(res)
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_NE_RADIUS" :: GET_NE_RADIUS
+  FUNCTION get_ne_radius() RESULT(res)
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_NE_RADIUS" :: GET_NE_RADIUS
 
-    use diagnostics, only: enter_exit
+    USE diagnostics, ONLY: enter_exit
 
-    implicit none
-    character(len=60) :: sub_name
-    integer :: res
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
+    INTEGER :: res
 
     sub_name = 'get_ne_radius'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
 
     res=ne_radius
 
-    call enter_exit(sub_name,2)
-  end function get_ne_radius
+    CALL enter_exit(sub_name,2)
+  END FUNCTION get_ne_radius
 
-  function get_nj_conc1() result(res)
-  !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_NJ_CONC1" :: GET_NJ_CONC1
+  FUNCTION get_nj_conc1() RESULT(res)
+    !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GET_NJ_CONC1" :: GET_NJ_CONC1
 
-    use diagnostics, only: enter_exit
-    implicit none
-    character(len=60) :: sub_name
-    integer :: res
+    USE diagnostics, ONLY: enter_exit
+    IMPLICIT NONE
+    CHARACTER(len=60) :: sub_name
+    INTEGER :: res
 
     sub_name = 'get_nj_conc1'
-    call enter_exit(sub_name,1)
+    CALL enter_exit(sub_name,1)
 
     res = nj_conc1
 
-    call enter_exit(sub_name,2)
-  end function get_nj_conc1
+    CALL enter_exit(sub_name,2)
+  END FUNCTION get_nj_conc1
 
-end module indices
+END MODULE indices
