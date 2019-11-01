@@ -108,6 +108,12 @@ Here we use the **-D** to set a configuration option, in this case *BUILD_TYPE*,
 
 The build can also be configured with a CMake GUI application, for instance you could use the ncurses based CMake configuration application called *ccmake* to configure a build.  When configuring the build with CMake on Windows and OS X there are easily installable binaries provided for these platforms that will install a GUI.  When using the GUI you must specify the source and build directory and the type of generator to generate the build files for.  With these requirements set options for setting the build like build type become available.
 
+If you are building bindings and your system is still running python 2 (which will depreciate in 2020), you can do a python 2 build by running the following commands::
+  
+  mkdir lungsim-python2
+  cd lungsim-python2
+  cmake -DPREFERRED_PYTHON_VERSION=2 ../lungsim
+
 Targets
 =======
 
