@@ -1536,12 +1536,12 @@ contains
    character(LEN=100), optional :: group_type_in, group_option_in
    real(dp), intent(in) :: CONTROL_PARAM,START_RAD
    !Input options ORDER_SYSTEM=STRAHLER (CONTROL_PARAM=RDS), HORSFIELD (CONTROL_PARAM=RDH)
-
+   ! ORDER_SYSTEM=RDS_TARGET (CONTROL_PARAM=term_rad)
    !Local variables
    character(LEN=100) :: group_type, group_options
    integer :: ne_min,ne_max,nindex,ne,n_max_ord,n,ne_start,&
       inlet_count
-   real(dp) :: radius
+   real(dp) :: radius,radius_min,rd
    character(len=60) :: sub_name
 
    sub_name = 'define_rad_from_geom'
@@ -1579,16 +1579,30 @@ contains
     !Strahler and Horsfield ordering system
     if(ORDER_SYSTEM(1:5).EQ.'strah')THEN
       nindex = no_sord !for Strahler ordering
+      rd = CONTROL_PARAM
+    elseif(ORDER_SYSTEM(1:5).eq.'rds_t')then
+      nindex = no_sord !for Strahler ordering
+      radius_min = CONTROL_PARAM !setting a minimum radius
     else if(ORDER_SYSTEM(1:5).eq.'horsf')then
       nindex = no_hord !for Horsfield ordering
+      rd = CONTROL_PARAM
+    elseif(ORDER_SYSTEM(1:5).eq.'rdh_t')then
+      nindex = no_hord !for Strahler ordering
+      radius_min = CONTROL_PARAM !setting a minimum radius
     endif
 
     ne=ne_start
     n_max_ord=elem_ordrs(nindex,ne)
     elem_field(ne_radius,ne)=START_RAD
 
+    if((ORDER_SYSTEM(1:3).eq.'rds').or.(ORDER_SYSTEM(1:3).eq.'rdh'))then
+      rd= 10.0_dp**((log10(radius_min)-log10(START_RAD))&
+        /dble(1-n_max_ord))
+      WRITE(*,*) ' You have chosen to target an outlet radius and vary RD, RD = ',rd
+    endif
+
     do ne=ne_min,ne_max
-     radius=10.0_dp**(log10(CONTROL_PARAM)*dble(elem_ordrs(nindex,ne)-n_max_ord)&
+     radius=10.0_dp**(log10(rd)*dble(elem_ordrs(nindex,ne)-n_max_ord)&
         +log10(START_RAD))
      elem_field(ne_radius,ne)=radius
      if(ne_radius_in.gt.0)then
