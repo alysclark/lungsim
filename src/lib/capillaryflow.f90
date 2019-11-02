@@ -1452,8 +1452,9 @@ subroutine cap_flow_admit(ne,admit,eff_admit_downstream,Lin,Lout,P1,P2,&
   deallocate (rad_v, STAT = AllocateStatus)
   deallocate (Q_sheet, STAT = AllocateStatus)
   deallocate (mu_app, STAT = AllocateStatus)
-
-  write(*,*) 'Capillary impedance completed for element: ',ne
+  if(cap_model == 2)then
+    write(*,*) 'Capillary impedance completed for element: ',ne
+  endif
   call enter_exit(sub_name,2)
 
 end subroutine cap_flow_admit
