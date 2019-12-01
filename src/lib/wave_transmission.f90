@@ -501,9 +501,7 @@ subroutine characteristic_admittance(no_freq,char_admit,prop_const,harmonic_scal
   sub_name = 'characteristic_admittance'
   call enter_exit(sub_name,1)
 
-if(remodeling_grade.eq.1.0_dp) then  ! Solving for Healthy
-
-  do ne=1,num_elems
+ do ne=1,num_elems
     do nn=1,2
       if(nn.eq.1) np=elem_nodes(1,ne)
       if(nn.eq.2) np=elem_nodes(2,ne)
@@ -514,200 +512,16 @@ if(remodeling_grade.eq.1.0_dp) then  ! Solving for Healthy
       if(admit_param%admittance_type.eq.'duan_zamir')then!alpha controls elasticity
        if(nn.eq.1)Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
        if(nn.eq.2)Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-      else !Hooke type elasticity
+      else!Hooke type elasticity
          h=elast_param%elasticity_parameters(2)*R0
         if(nn.eq.1) Rg_in=R0+3.0_dp*R0**2*Ptm/(4.0_dp*elast_param%elasticity_parameters(1)*h)
         if(nn.eq.2) Rg_out=R0+3.0_dp*R0**2*Ptm/(4.0_dp*elast_param%elasticity_parameters(1)*h)
       endif
-    enddo
-    elem_field(ne_radius_out,ne)=(Rg_in+Rg_out)/2.0_dp
+     enddo
+     elem_field(ne_radius_out,ne)=(Rg_in+Rg_out)/2.0_dp
+
   enddo
 
-  E=elast_param%elasticity_parameters(1) !Pa
-  h_bar=elast_param%elasticity_parameters(2)!this is a fraction of the radius so is unitless
-  do ne=1,num_elems
-    if(admit_param%admittance_type.eq.'lachase_standard')then
-      h=h_bar*elem_field(ne_radius_out,ne)
-      C=3.0_dp*PI*elem_field(ne_radius_out,ne)**3*elem_field(ne_length,ne)/(2.0_dp*h*E)
-      L=density*elem_field(ne_length,ne)/(4*PI*elem_field(ne_radius_out,ne)**2)
-      R=8.0_dp*viscosity*elem_field(ne_length,ne)/ &
-          (PI*elem_field(ne_radius_out,ne)**4) !laminar resistance
-      G=0.0_dp
-    elseif(admit_param%admittance_type.eq.'lachase_modified')then
-      h=h_bar*elem_field(ne_radius_out,ne)
-      C=3.0_dp*PI*elem_field(ne_radius_out,ne)**3/(2.0_dp*h*E)!
-      L=9.0_dp*density&
-         /(4.0_dp*PI*elem_field(ne_radius_out,ne)**2)!per unit length
-      R=81.0_dp*viscosity/ &
-           (8.0_dp*PI*elem_field(ne_radius_out,ne)**4) !laminar resistance per unit length
-      G=0.0_dp
-    elseif(admit_param%admittance_type.eq.'zhu_chesler')then
-      h=h_bar*elem_field(ne_radius_out,ne)
-      C=3.0_dp*PI*elem_field(ne_radius_out,ne)**3*elem_field(ne_length,ne)/(2.0_dp*h*E)
-      L=9.0_dp*density*elem_field(ne_length,ne)/(4.0_dp*PI*elem_field(ne_radius_out,ne)**2)
-      R=8.0_dp*viscosity*elem_field(ne_length,ne)/ &
-            (PI*elem_field(ne_radius_out,ne)**4) !laminar resistance
-      G=0.0_dp
-    elseif(admit_param%admittance_type.eq.'duan_zamir')then
-      do nf=1,no_freq !radius needs to  be multipled by 1000 to go to mm (units of rest of model)
-       omega=nf*2*PI*harmonic_scale!q/s
-       wolmer=(elem_field(ne_radius_out,ne))*sqrt(omega*density/viscosity)
-       call bessel_complex(wolmer*cmplx(0.0_dp,1.0_dp,8)**(3.0_dp/2.0_dp),bessel0,bessel1)
-       f10=2*bessel1/(wolmer*cmplx(0.0_dp,1.0_dp,8)**(3.0_dp/2.0_dp)*bessel0)!no units
-       wavespeed=sqrt(1.0_dp/(2*density*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-       char_admit(nf,ne)=PI*(elem_field(ne_radius_out,ne))**2/(density*wavespeed/(1-f10))*sqrt(1-f10)!mm3/Pa
-       prop_const(nf,ne)=cmplx(0.0_dp,1.0_dp,8)*omega/(wavespeed)!1/mm
-      enddo
-    else !Unrecognised admittance model
-      print *, "EXITING"
-      print *, "Unrecognised admittance model, please check inputs"
-      call exit(exit_status)
-    endif
-    if(admit_param%admittance_type.eq.'duan_zamir')then
-    else
-      do nf=1,no_freq
-        omega=nf*2*PI*harmonic_scale
-        char_admit(nf,ne)=sqrt(G+cmplx(0.0_dp,1.0_dp,8)*omega*C)/sqrt(R+cmplx(0.0_dp,1.0_dp,8)*omega*L)!mm3/Pa.s
-        prop_const(nf,ne)=sqrt((G+cmplx(0.0_dp,1.0_dp,8)*omega*C)*(R+cmplx(0.0_dp,1.0_dp,8)*omega*L))!1/mm
-      enddo!nf
-    endif
-  enddo!ne
-else ! Solving for remodeling case - only implemented for elastic_alpha
-
-  if(remodeling_grade.eq.2) then
-    alt_hyp=5.0_dp/6
-    alt_fib=1.0_dp
-    prox_fib=1
-    narrow_rad_one=0.015
-    narrow_rad_two=0.15
-    narrow_factor=1
-    prune_rad=0.16E-3
-    prune_fraction=0
-  elseif(remodeling_grade.eq.3) then
-    alt_hyp=4.0_dp/6
-    alt_fib=1.0_dp
-    prox_fib=1
-    narrow_rad_one=0.015
-    narrow_rad_two=0.15
-    narrow_factor=0.925
-    prune_rad=0.16E-3
-    prune_fraction=0.0625
-  elseif(remodeling_grade.eq.4) then
-    alt_hyp=3.0_dp/6
-    alt_fib=1.0_dp
-    prox_fib=1
-    narrow_rad_one=0.015
-    narrow_rad_two=0.15
-    narrow_factor=0.85
-    prune_rad=0.16E-3
-    prune_fraction=0.125
-  elseif(remodeling_grade.eq.5) then
-    alt_hyp=2.0_dp/6
-    alt_fib=1.0_dp
-    prox_fib=1
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.775
-    prune_rad=0.25E-3
-    prune_fraction=0.1875
-  elseif(remodeling_grade.eq.6) then
-    alt_hyp=1.0_dp/6
-    alt_fib=5.0_dp/6
-    prox_fib=(1-0.145)
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.7
-    prune_rad=0.25E-3
-    prune_fraction=0.25
-  elseif(remodeling_grade.eq.7) then
-    alt_hyp=1.0_dp/6
-    alt_fib=4.0_dp/6
-    prox_fib=(1-2*0.145)
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.625
-    prune_rad=0.25E-3
-    prune_fraction=0.3125
-  elseif(remodeling_grade.eq.8) then
-    alt_hyp=1.0_dp/6
-    alt_fib=3.0_dp/6
-    prox_fib=(1-3*0.145)
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.55
-    prune_rad=0.25E-3
-    prune_fraction=0.375
-  elseif(remodeling_grade.eq.9) then
-    alt_hyp=1.0_dp/6
-    alt_fib=2.0_dp/6
-    prox_fib=(1-4*0.145)
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.55
-    prune_rad=0.25E-3
-    prune_fraction=0.4375
-  elseif(remodeling_grade.eq.10) then
-    alt_hyp=1.0_dp/6
-    alt_fib=1.0_dp/6
-    prox_fib=(1-5*0.145)
-    narrow_rad_one=0.015
-    narrow_rad_two=0.25
-    narrow_factor=0.55
-    prune_rad=0.25E-3
-    prune_fraction=0.5
-  else
-    write(*,*) 'Remodeling grade out of range or not implemented yet.'
-    call exit(1)
-  endif
-
-  do ne=1,num_elems
-    do nn=1,2
-      if(nn.eq.1) np=elem_nodes(1,ne)
-      if(nn.eq.2) np=elem_nodes(2,ne)
-      call calculate_ppl(np,grav_vect,mechanics_parameters,Ppl)
-      Ptm=Ppl     ! Pa
-      if(nn.eq.1)R0=elem_field(ne_radius_in0,ne)
-      if(nn.eq.2)R0=elem_field(ne_radius_out0,ne)
-      if(admit_param%admittance_type.eq.'duan_zamir')then!alpha controls elasticity
-         if(elem_field(ne_group,ne).eq.0.0_dp)then !applying remodeling factors on arteries only
-           if(nn.eq.1) then
-             if((R0.gt.narrow_rad_one).and.(R0.lt.0.5)) then !Hypertophy+narrowing effect
-               if(R0.lt.0.05) then !only narrowing factor
-                 Rg_in=narrow_factor*R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-               elseif(R0.gt.narrow_rad_two) then ! Hypertrophy only
-                 Rg_in=R0*(Ptm*alt_hyp*elast_param%elasticity_parameters(1)+1.d0)
-               else ! both hypertophy and narrowing
-                 Rg_in=narrow_factor*R0*(Ptm*alt_hyp*alt_fib*elast_param%elasticity_parameters(1)+1.d0)
-               endif
-             else ! out of range of target vessels,hence, No remodeling
-               Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-             endif ! radius condition
-           endif ! nn=1
-           if(nn.eq.2) then
-             if((R0.gt.narrow_rad_one).and.(R0.lt.0.5)) then !Hypertophy+narrowing effect
-              if(R0.lt.0.05) then !only narrowing factor
-                Rg_out=narrow_factor*R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-              elseif(R0.gt.narrow_rad_two) then ! only hypertophy
-                Rg_out=R0*(Ptm*alt_hyp*elast_param%elasticity_parameters(1)+1.d0)
-              else ! both hypertophy and narrowing
-                Rg_out=narrow_factor*R0*(Ptm*alt_hyp*alt_fib*elast_param%elasticity_parameters(1)+1.d0)
-              endif
-             else ! out of range of target vessels,hence, No remodeling
-               Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-             endif ! radius condition
-           endif ! nn=2
-         else !everything except arteries is treated as normal
-           if(nn.eq.1)Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-           if(nn.eq.2)Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-         endif
-      else ! Hooke type elasticity
-         h=elast_param%elasticity_parameters(2)*R0
-        if(nn.eq.1) Rg_in=R0+3.0_dp*R0**2*Ptm/(4.0_dp*elast_param%elasticity_parameters(1)*h)
-        if(nn.eq.2) Rg_out=R0+3.0_dp*R0**2*Ptm/(4.0_dp*elast_param%elasticity_parameters(1)*h)
-      endif
-    enddo
-    elem_field(ne_radius_out,ne)=(Rg_in+Rg_out)/2.0_dp
-  enddo
 
   E=elast_param%elasticity_parameters(1) !Pa
   h_bar=elast_param%elasticity_parameters(2)!this is a fraction of the radius so is unitless
@@ -737,24 +551,10 @@ else ! Solving for remodeling case - only implemented for elastic_alpha
     elseif(admit_param%admittance_type.eq.'duan_zamir')then
      do nf=1,no_freq !radius needs to  be multipled by 1000 to go to mm (units of rest of model)
        omega=nf*2*PI*harmonic_scale!q/s
-       wolmer=(elem_field(ne_radius_out,ne))*sqrt(omega*density/viscosity) !radii is already affected by a factor
+       wolmer=(elem_field(ne_radius_out,ne))*sqrt(omega*density/viscosity)
        call bessel_complex(wolmer*cmplx(0.0_dp,1.0_dp,8)**(3.0_dp/2.0_dp),bessel0,bessel1)
        f10=2*bessel1/(wolmer*cmplx(0.0_dp,1.0_dp,8)**(3.0_dp/2.0_dp)*bessel0)!no units
-       if(elem_field(ne_group,ne).eq.0.0_dp)then !applying elasticity factor on wavespeed for arteries
-         if((R0.gt.narrow_rad_one).and.(R0.lt.0.5))then
-           if(R0.lt.0.05) then ! only narrowing
-             wavespeed=sqrt(1.0_dp/(2*density*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-           elseif(R0.gt.narrow_rad_two) then ! only Hypertrophy
-             wavespeed=sqrt(1.0_dp/(2*density*alt_hyp*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-           else ! narrowing and hypertrophy (also fibrosis depending on grade)
-             wavespeed=sqrt(1.0_dp/(2*density*alt_hyp*alt_fib*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-           endif
-         else ! not in range of remodeling target radii, hence, no remodeling
-           wavespeed=sqrt(1.0_dp/(2*density*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-         endif
-       else !apply normal elasticity on everything except arteries
-         wavespeed=sqrt(1.0_dp/(2*density*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
-       endif
+       wavespeed=sqrt(1.0_dp/(2*density*elast_param%elasticity_parameters(1)))*sqrt(1-f10)! !mm/s
        char_admit(nf,ne)=PI*(elem_field(ne_radius_out,ne))**2/(density*wavespeed/(1-f10))*sqrt(1-f10)!mm3/Pa
        prop_const(nf,ne)=cmplx(0.0_dp,1.0_dp,8)*omega/(wavespeed)!1/mm
      enddo
@@ -772,7 +572,6 @@ else ! Solving for remodeling case - only implemented for elastic_alpha
       enddo!nf
     endif
   enddo!ne
-endif
   call enter_exit(sub_name,2)
 end subroutine characteristic_admittance
 

@@ -4,6 +4,8 @@
 *.o
 *.obj
 
+#bbedit
+*.bbprojectd
 # Precompiled Headers
 *.gch
 *.pch
