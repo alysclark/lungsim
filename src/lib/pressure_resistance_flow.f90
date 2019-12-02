@@ -1052,6 +1052,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       narrow_factor=0.55_dp
       prune_rad=0.25_dp
       prune_fraction=0.5_dp
+    elseif(remodeling_grade.eq.1) then
     else
       write(*,*) 'Remodeling grade out of range or not implemented yet.'
       call exit(1)
@@ -1107,7 +1108,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
         else
           if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad.and.counter1/10.le.prune_fraction) then !only applying on arteries
             !if(elem_ordrs(no_sord,ne).gt.1)then
-              write(*,*) ne,nn,elem_ordrs(no_sord,ne),R0
+            !  write(*,*) ne,nn,elem_ordrs(no_sord,ne),R0
             !endif
             if(nn.eq.1) then
               elem_field(ne_radius_in,ne)=0.02_dp
