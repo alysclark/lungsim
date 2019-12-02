@@ -975,7 +975,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=5.0_dp/6
       alt_fib=1.0_dp
       prox_fib=1.0
-      narrow_rad_one=0.025_dp
+      narrow_rad_one=0.015_dp
       narrow_rad_two=0.15_dp
       narrow_factor=1.0_dp
       prune_rad=0.16_dp
@@ -985,7 +985,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_fib=1.0_dp
       prox_fib=1
       narrow_rad_one=0.015_dp
-      narrow_rad_two=0.25_dp
+      narrow_rad_two=0.15_dp
       narrow_factor=0.925_dp
       prune_rad=0.16_dp
       prune_fraction=0.0625_dp
@@ -993,7 +993,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=3.0_dp/6
       alt_fib=1.0_dp
       prox_fib=1
-      narrow_rad_one=0.025_dp
+      narrow_rad_one=0.015_dp
       narrow_rad_two=0.15_dp
       narrow_factor=0.85_dp
       prune_rad=0.16_dp
@@ -1002,7 +1002,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=2.0_dp/6
       alt_fib=1.0_dp
       prox_fib=1
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.775_dp
       prune_rad=0.25_dp
@@ -1011,7 +1011,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=1.0_dp/6
       alt_fib=5.0_dp/6
       prox_fib=(1-0.145)
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.7_dp
       prune_rad=0.25_dp
@@ -1020,7 +1020,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=1.0_dp/6
       alt_fib=4.0_dp/6
       prox_fib=(1-2*0.145)
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.625_dp
       prune_rad=0.25_dp
@@ -1029,7 +1029,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=1.0_dp/6
       alt_fib=3.0_dp/6
       prox_fib=(1-3*0.145)
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.55_dp
       prune_rad=0.25_dp
@@ -1038,7 +1038,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=1.0_dp/6
       alt_fib=2.0_dp/6
       prox_fib=(1-4*0.145)
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.55_dp
       prune_rad=0.25_dp
@@ -1047,7 +1047,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
       alt_hyp=1.0_dp/6
       alt_fib=1.0_dp/6
       prox_fib=(1-5*0.145)
-      narrow_rad_one=0.025_dp !!! CAUTION
+      narrow_rad_one=0.015_dp !!! CAUTION
       narrow_rad_two=0.25_dp
       narrow_factor=0.55_dp
       prune_rad=0.25_dp
@@ -1058,6 +1058,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
     endif
     
     counter1 = 1.0_dp
+    counter2 = 0.0_dp !total pruned
     do ne=1,num_elems
       do nn=1,2
         if(nn.eq.1) np=elem_nodes(1,ne)
@@ -1104,22 +1105,29 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
             endif
           endif
         else
-          if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad) then !only applying on arteries
-            if(counter1/10.le.prune_fraction) then
-              if(nn.eq.1) elem_field(ne_radius_in,ne)=R0*0.3_dp
-              if(nn.eq.2) elem_field(ne_radius_out,ne)=R0*0.3_dp
+          if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad.and.counter1/10.le.prune_fraction) then !only applying on arteries
+            !if(elem_ordrs(no_sord,ne).gt.1)then
+              write(*,*) ne,nn,elem_ordrs(no_sord,ne),R0
+            !endif
+            if(nn.eq.1) then
+              elem_field(ne_radius_in,ne)=0.02_dp
+              counter2 = counter2 + 1
             endif
+            if(nn.eq.2) elem_field(ne_radius_out,ne)=0.02_dp
           else ! not pruned
             !need to revise unstrained radius and elasticity to match vessel parameters
             alpha = elasticity_parameters(1)
             if(elem_field(ne_group,ne).eq.0.0_dp) then !artery
-              if((R0.gt.narrow_rad_one).and.(R0.lt.0.5_dp)) then ! Hypertrophy+narrowing effect
-                if(R0.lt.0.05_dp) then ! only Narrow_factor
-                
-                endif
+              if((R0.gt.0.05).and.(R0.lt.0.5_dp)) then ! Hypertrophy
+                alpha = alpha * alt_hyp
+              endif
+              if((R0.gt.0.015).and.(R0.lt.0.25_dp)) then ! fibrosis
+                alpha = alpha * alt_fib
+              endif
+              if((R0.gt.narrow_rad_one).and.(R0.lt.narrow_rad_two))then !Narrow last so it doesn't impact any other metric
+                R0 = R0 * narrow_factor
               endif
             endif
-            
             if(Ptm.LT.elasticity_parameters(2))then
               if(nn.eq.1) elem_field(ne_radius_in,ne)=R0*((Ptm*alpha)+1.d0)
               if(nn.eq.2) elem_field(ne_radius_out,ne)=R0*((Ptm*alpha)+1.d0)
@@ -1135,7 +1143,6 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
                 elem_field(ne_radius_out,ne)=R0*((elasticity_parameters(2)*alpha)+1.d0)
               endif
           endif
-          
           
           endif!prune it?
         
@@ -1157,7 +1164,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
         endif
       endif
     enddo!ne
-
+    write(*,*) 'Total number of pruned arteries',counter2
 call enter_exit(sub_name,2)
 end subroutine calc_press_area
 !##############################################################################

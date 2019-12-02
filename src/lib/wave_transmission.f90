@@ -495,12 +495,101 @@ subroutine characteristic_admittance(no_freq,char_admit,prop_const,harmonic_scal
   complex(dp) :: f10,bessel0,bessel1
   integer :: ne,nf,nn,np
   integer :: exit_status=0
-  real(dp) :: R0,Ppl,Ptm,Rg_in,Rg_out
+  real(dp) :: R0,Ppl,Ptm,Rg_in,Rg_out,alpha,counter1
   real(dp) :: alt_hyp,alt_fib,prox_fib,narrow_rad_one,narrow_rad_two,narrow_factor,prune_rad,prune_fraction ! Remodeling parameters
   character(len=60) :: sub_name
   sub_name = 'characteristic_admittance'
   call enter_exit(sub_name,1)
 
+      if(remodeling_grade.ne.1.0_dp) then
+      write(*,*) 'Solving remodeling case, grade',remodeling_grade,' - make sure you are using elastic_alpha vessel type'
+    endif
+    if(remodeling_grade.eq.2) then
+      alt_hyp=5.0_dp/6
+      alt_fib=1.0_dp
+      prox_fib=1.0
+      narrow_rad_one=0.015_dp
+      narrow_rad_two=0.15_dp
+      narrow_factor=1.0_dp
+      prune_rad=0.16_dp
+      prune_fraction=0.0_dp
+    elseif(remodeling_grade.eq.3) then
+      alt_hyp=4.0_dp/6
+      alt_fib=1.0_dp
+      prox_fib=1
+      narrow_rad_one=0.015_dp
+      narrow_rad_two=0.15_dp
+      narrow_factor=0.925_dp
+      prune_rad=0.16_dp
+      prune_fraction=0.0625_dp
+    elseif(remodeling_grade.eq.4) then
+      alt_hyp=3.0_dp/6
+      alt_fib=1.0_dp
+      prox_fib=1
+      narrow_rad_one=0.015_dp
+      narrow_rad_two=0.15_dp
+      narrow_factor=0.85_dp
+      prune_rad=0.16_dp
+      prune_fraction=0.125_dp
+    elseif(remodeling_grade.eq.5) then
+      alt_hyp=2.0_dp/6
+      alt_fib=1.0_dp
+      prox_fib=1
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.775_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.1875_dp
+    elseif(remodeling_grade.eq.6) then
+      alt_hyp=1.0_dp/6
+      alt_fib=5.0_dp/6
+      prox_fib=(1-0.145)
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.7_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.250_dp
+    elseif(remodeling_grade.eq.7) then
+      alt_hyp=1.0_dp/6
+      alt_fib=4.0_dp/6
+      prox_fib=(1-2*0.145)
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.625_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.3125_dp
+    elseif(remodeling_grade.eq.8) then
+      alt_hyp=1.0_dp/6
+      alt_fib=3.0_dp/6
+      prox_fib=(1-3*0.145)
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.55_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.375_dp
+    elseif(remodeling_grade.eq.9) then
+      alt_hyp=1.0_dp/6
+      alt_fib=2.0_dp/6
+      prox_fib=(1-4*0.145)
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.55_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.4375_dp
+    elseif(remodeling_grade.eq.10) then
+      alt_hyp=1.0_dp/6
+      alt_fib=1.0_dp/6
+      prox_fib=(1-5*0.145)
+      narrow_rad_one=0.015_dp !!! CAUTION
+      narrow_rad_two=0.25_dp
+      narrow_factor=0.55_dp
+      prune_rad=0.25_dp
+      prune_fraction=0.5_dp
+    else
+      write(*,*) 'Remodeling grade out of range or not implemented yet.'
+      call exit(1)
+    endif
+  counter1 = 1.0_dp
  do ne=1,num_elems
     do nn=1,2
       if(nn.eq.1) np=elem_nodes(1,ne)
@@ -510,8 +599,31 @@ subroutine characteristic_admittance(no_freq,char_admit,prop_const,harmonic_scal
       if(nn.eq.1)R0=elem_field(ne_radius_in0,ne)
       if(nn.eq.2)R0=elem_field(ne_radius_out0,ne)
       if(admit_param%admittance_type.eq.'duan_zamir')then!alpha controls elasticity
-       if(nn.eq.1)Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
-       if(nn.eq.2)Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
+        if(remodeling_grade.eq.1)then
+          if(nn.eq.1)Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
+          if(nn.eq.2)Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
+        else !remodelling
+          if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad.and.counter1/10.le.prune_fraction) then !only applying on arteries
+            if(nn.eq.1) Rg_in=0.02_dp
+            if(nn.eq.2) Rg_out=0.02_dp
+          else ! not pruned
+            !need to revise unstrained radius and elasticity to match vessel parameters
+            alpha = elast_param%elasticity_parameters(1)
+            if(elem_field(ne_group,ne).eq.0.0_dp) then !artery
+              if((R0.gt.0.05).and.(R0.lt.0.5_dp)) then ! Hypertrophy
+                alpha = alpha * alt_hyp
+              endif
+              if((R0.gt.0.015).and.(R0.lt.0.25_dp)) then ! fibrosis
+                alpha = alpha * alt_fib
+              endif
+              if((R0.gt.narrow_rad_one).and.(R0.lt.narrow_rad_two))then !Narrow last so it doesn't impact any other metric
+                R0 = R0 * narrow_factor
+              endif
+            endif
+            if(nn.eq.1)Rg_in=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
+            if(nn.eq.2)Rg_out=R0*(Ptm*elast_param%elasticity_parameters(1)+1.d0)
+          endif !pruned
+        endif !remodelling grade
       else!Hooke type elasticity
          h=elast_param%elasticity_parameters(2)*R0
         if(nn.eq.1) Rg_in=R0+3.0_dp*R0**2*Ptm/(4.0_dp*elast_param%elasticity_parameters(1)*h)
@@ -519,7 +631,12 @@ subroutine characteristic_admittance(no_freq,char_admit,prop_const,harmonic_scal
       endif
      enddo
      elem_field(ne_radius_out,ne)=(Rg_in+Rg_out)/2.0_dp
-
+      if(remodeling_grade.gt.1)then
+        if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad) then
+          counter1 = counter1 + 1.0_dp
+          if(counter1.ge.11.0_dp) counter1=1.0_dp
+        endif
+      endif
   enddo
 
 
