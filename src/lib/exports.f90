@@ -267,7 +267,7 @@ contains
 !!! Local Variables
     integer :: len_end,nj,np,np_last,VALUE_INDEX
     logical :: FIRST_NODE
-
+    write(*,*) 'write nodes start'
     len_end=len_trim(name)
     if(num_nodes.GT.0) THEN
        open(10, file=EXNODEFILE, status='replace')
@@ -301,6 +301,8 @@ contains
        enddo !nolist (np)
     endif !num_nodes
     close(10)
+    
+	write(*,*) 'write node end'
 
   end subroutine export_node_geometry
 

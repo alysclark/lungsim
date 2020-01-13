@@ -789,15 +789,16 @@ contains
   !*grow_tree:* the main growing subroutine (public). Genertes a volume-filling
   ! tree into a closed surface.
   !
-  subroutine grow_tree(parent_ne,surface_elems,angle_max,angle_min,&
-       branch_fraction,length_limit,shortest_length,rotation_limit,to_export,filename)
+  subroutine grow_tree(parent_ne,angle_max,angle_min,branch_fraction,length_limit,&
+  	shortest_length,rotation_limit,to_export,filename)
     !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_GROW_TREE" :: GROW_TREE
 
     use diagnostics, only: enter_exit
+    !use arrays, only: triangle,vertex_xyz
+
     implicit none
 
     integer,intent(in)  :: parent_ne                ! list of end branch elements to grow from
-    integer,intent(in)  :: surface_elems(:)         ! list of surface elements defining the host region
     real(dp),intent(in) :: angle_max                ! maximum branch angle with parent; in degrees
     real(dp),intent(in) :: angle_min                ! minimum branch angle with parent; in degrees
     real(dp),intent(in) :: branch_fraction          ! fraction of distance (to COFM) to branch
@@ -808,303 +809,331 @@ contains
     character(len=*),intent(in) :: filename
 
     !Local variables
-    integer,allocatable :: local_parent(:)          ! stores current generation of local parent elements
-    integer,allocatable :: local_parent_temp(:)     ! temporary storage of next generation of local parent elems
-    integer,allocatable :: map_seed_to_elem(:)      ! records current elem associated w. data points
-    integer,allocatable :: map_seed_to_space(:)     ! records initial elem associated w. data points (the 'space')
-    integer,allocatable :: num_seeds_from_elem(:)   ! records # of seeds currently grouped with an elem
-    integer,allocatable :: triangle(:,:)
-    character(len=100) :: writefile
+   ! integer,allocatable :: local_parent(:)          ! stores current generation of local parent elements
+   ! integer,allocatable :: local_parent_temp(:)     ! temporary storage of next generation of local parent elems
+   ! integer,allocatable :: map_seed_to_elem(:)      ! records current elem associated w. data points
+   ! integer,allocatable :: map_seed_to_space(:)     ! records initial elem associated w. data points (the 'space')
+   ! integer,allocatable :: num_seeds_from_elem(:)   ! records # of seeds currently grouped with an elem
+   ! character(len=100) :: writefile
 
-    integer :: i,j,kount,M,N,nd,nd_min,ne,ne_grnd_parent,ne_parent,ne_stem,&
-         noelem_parent,np,np_start,np_prnt_start,np_grnd_start,num_seeds_in_space,num_next_parents, &
-         num_parents,num_triangles,num_vertices,num_elems_new,num_nodes_new,num_terminal
+    !integer :: i,j,kount,M,N,nd,nd_min,ne,ne_grnd_parent,ne_parent,ne_stem,&
+    !     noelem_parent,np,np_start,np_prnt_start,np_grnd_start,num_seeds_in_space,num_next_parents, &
+    !     num_parents,num_triangles,num_vertices,num_elems_new,num_nodes_new,num_terminal
 
-    real(dp),allocatable :: vertex_xyz(:,:)
-    real(dp),dimension(3) :: COFM,candidate_xyz
-    real(dp) :: distance_limit = 300.0_dp,length_parent
+    !real(dp),dimension(3) :: COFM,candidate_xyz
+    !real(dp) :: distance_limit = 300.0_dp,length_parent
 
-    logical :: make_branch,enough_points,first_group,internal, &
-         limit_branching_angle = .true., &  ! option to restrict branch angle
-         limit_branching_plane = .false.    ! option to restrict angle between branching planes
+    !logical :: make_branch,enough_points,first_group,internal, &
+    !     limit_branching_angle = .true., &  ! option to restrict branch angle
+    !     limit_branching_plane = .false.    ! option to restrict angle between branching planes
 
     character(len=60) :: sub_name
 
     sub_name = 'grow_tree'
     call enter_exit(sub_name,1)
+    
+    write(*,*) 'entering grow tree'
+    
+    write(*,*) parent_ne
+    write(*,*)angle_max
+    write(*,*)angle_min
+    write(*,*)branch_fraction
+    write(*,*)length_limit
+    write(*,*)shortest_length
+    write(*,*)rotation_limit
+    write(*,*)to_export
+    write(*,*)filename
 
 
-    if(to_export)then
-       !!! export vertices as nodes
-       writefile = trim(filename)//'.txt'
-       open(40, file = writefile, status='replace')
-       write(40,'('' Data point number          Terminal element number'')')
-    endif
+!    if(to_export)then
+!       !!! export vertices as nodes
+!       writefile = trim(filename)//'.txt'
+!       open(40, file = writefile, status='replace')
+!       write(40,'('' Data point number          Terminal element number'')')
+!    endif
 
-
-    call triangles_from_surface(num_triangles,num_vertices,surface_elems,triangle,vertex_xyz)
-
+!    write(*,*) 'triangles from surface isnt this done already'
+!    write(*,* ) num_triangles,num_vertices
+!    call triangles_from_surface(num_triangles,num_vertices)
+!     write(*,*) 'triangles from surface isnt this done already'
 !!! We can estimate the number of elements in the generated model based on the
 !!! number of data (seed) points. i.e. N = 2*N_data - 1. So the total number of
 !!! elements following tree generation will be ~ num_elems + 2*num_data. Use this estimate
 !!! to increase the node and element arrays.
-    num_elems_new = num_elems + 2*num_data + 100
-    num_nodes_new = num_nodes + 2*num_data + 100
-    call reallocate_node_elem_arrays(num_elems_new,num_nodes_new)
+!    num_elems_new = num_elems + 2*num_data + 100
+!    num_nodes_new = num_nodes + 2*num_data + 100
+!    call reallocate_node_elem_arrays(num_elems_new,num_nodes_new)
 
 !!! Allocate memory for temporary arrays (need a more intelligent way of estimating size!)
-    allocate(local_parent_temp(num_elems_new))
-    allocate(local_parent(num_elems_new))
-    allocate(num_seeds_from_elem(num_elems_new))
-    allocate(map_seed_to_elem(num_data))
-    allocate(map_seed_to_space(num_data))
+   ! allocate(local_parent_temp(num_elems_new))
+   !allocate(local_parent(num_elems_new))
+   ! allocate(num_seeds_from_elem(num_elems_new))
+   ! allocate(map_seed_to_elem(num_data))
+   ! allocate(map_seed_to_space(num_data))
 
 !!! Initialise local_parent to the list of parent elements, and num_parents (current
 !!! number of parent branches) to the number of parent branches.
-    local_parent(1:size(parentlist)) = parentlist(1:size(parentlist))
-    num_parents = count(parentlist.ne.0) !initial number of 'terminal' parent branches
-
-    NUM_SEEDS_FROM_ELEM = 0
-    num_next_parents = num_parents
-
-
-!!! Calculate the initial grouping of data points with terminal elements
-!!! this defines the 'space' with which each seed is associated
-!!! For a single parent, all seed points will initially be mapped to
-!!! it; for multiple parents 'group_seeds_with_branch' used to be called to calculate
-!!! the closest parent end-point to each seed point. This has been replaced by splitting
-!!! seed points using the orthogonal to branching planes of the upper tree.
-    map_seed_to_space(1:num_data) = parentlist(1) !#! this is done for the new-style growing (full grow per terminal)
-    if(num_parents.gt.1)then
-       first_group = .true.
-!       call group_seeds_with_branch(map_seed_to_space,num_next_parents,num_seeds_from_elem,&
-       !            num_terminal,local_parent,500.0_dp,first_group)
-       call split_seed_points_initial(map_seed_to_space,parent_ne)
-    endif !parentlist.gt.1
-    first_group = .false.
-
-    WRITE(*,'(''  parent  #seeds  #terminal'')')
-
-    ! Set initial values for local and global nodes and elements
-    ne = num_elems !initialise mesh global element #
-    np = num_nodes !initialise mesh global node #
-
-!!! loop over the initial parent list (the initial conditions/terminal elements for growing)
-!!! growing is done into 'spaces', where each 'space' is the initial grouping of seed
-!!! points with the closest terminal branch. This grouping can be manipulated to take into account
-!!! the size of the initial terminal branches. e.g. smaller diameter --> smaller set of seeds
-
-    do noelem_parent = 1,num_parents
-       ne_stem = parentlist(noelem_parent) ! the 'stem' parent element for the 'space'
-       map_seed_to_elem = 0 ! initialise the seed mapping array
-       num_seeds_in_space = 0 !initialise the number of seed points in the 'space'
-       do nd = 1,num_data ! for all of the seed points (stored in data_xyz array)
-          if(map_seed_to_space(nd).eq.ne_stem)then ! for the points in this space
-             map_seed_to_elem(nd) = ne_stem ! record the current element associated with seed point nd
-             num_seeds_in_space = num_seeds_in_space+1 ! count number of seed points in the space
-          endif
-       enddo
-
-       num_next_parents = 1 ! initialise the number of current local parent branches
-       local_parent(1) = ne_stem ! first local parent branch is the 'stem' branch
-       num_terminal = 0 ! initialise the number of definite terminal branches
-
-!!! bifurcating distributive algorithm
-       do while(num_next_parents.ne.0) !while still some parent branches with seed points
-          num_parents = num_next_parents ! update the number of current local parent branches
-          num_next_parents = 0 ! reset the number of local parent branches in next generation
-
-          do M = 1,num_parents ! for each of the current local parent branches
-             ne_parent = local_parent(M) !parent element #
-             ! Calculate centre of mass of current seed point set
-             call calculate_seed_cofm(map_seed_to_elem,ne_parent,COFM)
-
-             ne_grnd_parent = elem_cnct(-1,1,ne_parent) !grandparent global element #
-             np_start = elem_nodes(2,ne_parent) !parent global end node #
-             np_prnt_start = elem_nodes(1,ne_parent) !parent global start node #
-             np_grnd_start = elem_nodes(1,ne_grnd_parent) !grandparent global start node #
-
-             length_parent = elem_field(ne_length,ne_parent)
-
-!!! Split each set of seed points using the plane defined by the
-!!! parent branch and the centre of mass. Seed points get associated with NEW elements (ne+1,ne+2)
-             call split_seed_points(map_seed_to_elem,ne_parent,ne,np_start,&
-                  np_prnt_start,np_grnd_start,COFM,enough_points)
-
-!!! check whether enough seed points remaining in BOTH seed groups for branching to be done
-!!! (note: this could be improved to continue branching in one set of seeds)
-             if(enough_points)then
-                do N = 1,2 !for each of the two new branches
-                   ! Set up arrays for new element and node
-                   ! after create_new_node the current element == ne and current node == np
-                   call create_new_node(ne,ne_parent,np,np_start,.TRUE.)
-                   ! find the centre of mass of seed points
-                   call calculate_seed_cofm(map_seed_to_elem,ne,COFM)
-                   ! Generate a branch directed towards the centre of mass. Returns location
-                   ! of end node in candidate_xyz (adjusted below based on length and shape criteria)
-                   call branch_to_cofm(map_seed_to_elem,ne,np_start,&
-                        COFM,branch_fraction,length_limit,length_parent,shortest_length,&
-                        candidate_xyz,make_branch)
-                   node_xyz(1:3,np) = candidate_xyz(1:3) ! the new node location is as returned by 'branch_to_cofm'
-                   call calc_branch_direction(ne) ! calculate direction of the new branch
-                   elem_field(ne_length,ne) = distance_between_points(node_xyz(1,np_start),node_xyz(1,np))
-                   ! Check whether this is a new parent branch or a terminal branch
-                   if(make_branch.and.enough_points)then ! meets all criteria for continuing branching
-                      num_next_parents = num_next_parents+1 ! increment the number of next parents
-                      local_parent_temp(num_next_parents) = ne !records the elements that are parents
-                   else ! this is a terminal branch
-                      num_terminal = num_terminal+1 ! increment the number of terminal branches
-                   endif
-                enddo !N (for both new branches)
-
-                if(limit_branching_angle)then
-                   ! Check that the branch angles are not too large or too small
-                   ! Correct such that branches stay in the original branching plane
-                   call limit_branch_angles(ne,ne_parent,np,&
-                        np_prnt_start,np_start,angle_max,angle_min)
-
-                   internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                        vertex_xyz)
-                   if(.not.internal)then ! halve the length, and make terminal
-                      elem_field(ne_length,ne) = 0.5_dp*distance_between_points&
-                           (node_xyz(1,np_start),node_xyz(1,np))
-                      node_xyz(1:3,np) = node_xyz(1:3,np_start) + 0.5_dp*&
-                           elem_field(ne_length,ne)*elem_direction(1:3,ne)
-                      internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                           vertex_xyz)
-                      kount = 0
-                      do while(.not.internal)
-                         kount = kount+1
-                         call shorten_branch_and_children(ne_parent)
-                         internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                              vertex_xyz)
-                         if(kount.ge.3)then
-                            call shorten_branch_and_children(elem_cnct(-1,1,ne_parent))
-                            internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                                 vertex_xyz)
-                         endif
-                         if(kount.gt.5.and.(.not.internal))then
-                            write(*,'('' WARNING: element'',i6,'' not internal'')') ne
-                            internal = .true.
-                         endif
-                      enddo
-                      if(inlist(ne,local_parent_temp))then ! set to be terminal
-                         local_parent_temp(num_next_parents) = 0
-                         num_next_parents = num_next_parents-1 ! decrement the number of next parents
-                         num_terminal = num_terminal+1
-                         nd_min = closest_seed_to_node_in_group(map_seed_to_elem,ne,np) ! closest seed point
-                         map_seed_to_elem(nd_min) = 0 ! remove seed point from list
-                         map_seed_to_space(nd_min) = ne ! recording element number
-
-                         if(to_export) then
-                           write(40,*) nd_min,ne
-                         endif
-
-                      endif
-                   endif !.not.internal
-
-                   internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np-1),&
-                        vertex_xyz)
-                   if(.not.internal)then ! halve the length, and halve the angle from parent
-                      elem_field(ne_length,ne-1) = 0.5_dp*distance_between_points&
-                           (node_xyz(1,np_start),node_xyz(1,np-1))
-                      node_xyz(1:3,np-1) = node_xyz(1:3,np_start) + 0.5_dp*&
-                           elem_field(ne_length,ne-1)*elem_direction(1:3,ne-1)
-                      internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np-1),&
-                           vertex_xyz)
-                      do while(.not.internal)
-                         kount = kount+1
-                         call shorten_branch_and_children(ne_parent)
-                         internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                              vertex_xyz)
-                         if(kount.ge.3)then
-                            call shorten_branch_and_children(elem_cnct(-1,1,ne_parent))
-                            internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
-                                 vertex_xyz)
-                         endif
-                         if(kount.gt.4.and.(.not.internal))then
-                            write(*,'('' WARNING: element'',i6,'' not internal'')') ne-1
-                            internal = .true.
-                         endif
-                      enddo
-                      if(inlist(ne-1,local_parent_temp))then ! set to be terminal
-                         do i = 1,num_next_parents
-                            if(local_parent_temp(i).eq.ne-1)then
-                               do j = i,num_next_parents-1
-                                  local_parent_temp(j) = local_parent_temp(i+1)
-                               enddo
-                            endif
-                         enddo
-                         num_next_parents = num_next_parents-1 ! decrement the number of next parents
-                         num_terminal = num_terminal+1
-                         nd_min = closest_seed_to_node_in_group(map_seed_to_elem,ne-1,np-1) ! closest seed point
-                         map_seed_to_elem(nd_min) = 0 ! remove seed point from list
-                         map_seed_to_space(nd_min) = ne ! recording element number
-
-                         if(to_export) then
-                           write(40,*) nd_min,ne
-                         endif
-                      endif
-                   endif ! .not.internal
-
-                endif
-
-                if(limit_branching_plane)then
-                   ! Check the angle of rotation between child and parent branching planes.
-                   ! If absolute angle is larger than a user-specified limit, adjust to be
-                   ! the limit value. This is used for making sure that the CFD geometry turns out ok.
-                   call check_branch_rotation_plane(map_seed_to_elem,ne,ne_grnd_parent,ne_parent, &
-                        local_parent_temp,num_next_parents, &
-                        np,np_start,np_prnt_start,np_grnd_start,num_terminal,rotation_limit)
-                   internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),vertex_xyz)
-                endif
-
-             else
-                write(*,*) 'terminal, not enough points',ne !!! never happens!!!
-                read(*,*)
-                ! Not enough seed points in the set during the split.
-                ! Find the closest seed point to node np_start, and remove from seeds
-                num_terminal = num_terminal+1 ! increment number of terminal branches
-                nd_min = closest_seed_to_node(map_seed_to_elem,np_start) ! closest seed point
-                map_seed_to_elem(nd_min) = 0 ! remove seed point from list
-                map_seed_to_space(nd_min) = ne ! record the element to data point mapping
-             endif
-          enddo ! for all current parent branches
-          ! Copy the temporary list of branches to local_parent. These become the
-          ! parent elements for the next branching
-          local_parent(1:num_next_parents) = local_parent_temp(1:num_next_parents)
-          ! Regroup the seed points with the closest current parent
-          call group_seeds_with_branch(map_seed_to_elem,num_next_parents,num_seeds_from_elem,&
-               num_terminal,local_parent,DISTANCE_LIMIT,.FALSE.)
-
-       enddo ! while still parent branches
-
-       write(*,'(I7,I8,I9)') ne_parent,num_seeds_in_space,num_terminal
-
-    enddo ! for each initial parent
-
-    if(to_export)then
-      close(40)
-    endif
-
-!!! set new total numbers of nodes and elements
-    num_nodes=np !highest node # in nr
-    num_elems=ne !highest element # in nr
-
-!!! update the tree connectivity
-    call element_connectivity_1d
-!!! calculate branch generations and orders
-    call evaluate_ordering
+ !    local_parent(1:size(parentlist)) = parentlist(1:size(parentlist))
+!     num_parents = count(parentlist.ne.0) !initial number of 'terminal' parent branches
+! 
+!     NUM_SEEDS_FROM_ELEM = 0
+!     num_next_parents = num_parents
+! 
+! 
+! !!! Calculate the initial grouping of data points with terminal elements
+! !!! this defines the 'space' with which each seed is associated
+! !!! For a single parent, all seed points will initially be mapped to
+! !!! it; for multiple parents 'group_seeds_with_branch' used to be called to calculate
+! !!! the closest parent end-point to each seed point. This has been replaced by splitting
+! !!! seed points using the orthogonal to branching planes of the upper tree.
+!     map_seed_to_space(1:num_data) = parentlist(1) !#! this is done for the new-style growing (full grow per terminal)
+!     if(num_parents.gt.1)then
+!        first_group = .true.
+! !       call group_seeds_with_branch(map_seed_to_space,num_next_parents,num_seeds_from_elem,&
+!        !            num_terminal,local_parent,500.0_dp,first_group)
+!        call split_seed_points_initial(map_seed_to_space,parent_ne)
+!     endif !parentlist.gt.1
+!     first_group = .false.
+! 
+!     WRITE(*,'(''  parent  #seeds  #terminal'')')
+! 
+!     ! Set initial values for local and global nodes and elements
+!     ne = num_elems !initialise mesh global element #
+!     np = num_nodes !initialise mesh global node #
+! 
+! !!! loop over the initial parent list (the initial conditions/terminal elements for growing)
+! !!! growing is done into 'spaces', where each 'space' is the initial grouping of seed
+! !!! points with the closest terminal branch. This grouping can be manipulated to take into account
+! !!! the size of the initial terminal branches. e.g. smaller diameter --> smaller set of seeds
+! 
+!     do noelem_parent = 1,num_parents
+!        ne_stem = parentlist(noelem_parent) ! the 'stem' parent element for the 'space'
+!        map_seed_to_elem = 0 ! initialise the seed mapping array
+!        num_seeds_in_space = 0 !initialise the number of seed points in the 'space'
+!        do nd = 1,num_data ! for all of the seed points (stored in data_xyz array)
+!           if(map_seed_to_space(nd).eq.ne_stem)then ! for the points in this space
+!              map_seed_to_elem(nd) = ne_stem ! record the current element associated with seed point nd
+!              num_seeds_in_space = num_seeds_in_space+1 ! count number of seed points in the space
+!           endif
+!        enddo
+! 
+!        num_next_parents = 1 ! initialise the number of current local parent branches
+!        local_parent(1) = ne_stem ! first local parent branch is the 'stem' branch
+!        num_terminal = 0 ! initialise the number of definite terminal branches
+! 
+! !!! bifurcating distributive algorithm
+!        do while(num_next_parents.ne.0) !while still some parent branches with seed points
+!           num_parents = num_next_parents ! update the number of current local parent branches
+!           num_next_parents = 0 ! reset the number of local parent branches in next generation
+! 
+!           do M = 1,num_parents ! for each of the current local parent branches
+!              ne_parent = local_parent(M) !parent element #
+!              ! Calculate centre of mass of current seed point set
+!              call calculate_seed_cofm(map_seed_to_elem,ne_parent,COFM)
+! 
+!              ne_grnd_parent = elem_cnct(-1,1,ne_parent) !grandparent global element #
+!              np_start = elem_nodes(2,ne_parent) !parent global end node #
+!              np_prnt_start = elem_nodes(1,ne_parent) !parent global start node #
+!              np_grnd_start = elem_nodes(1,ne_grnd_parent) !grandparent global start node #
+! 
+!              length_parent = elem_field(ne_length,ne_parent)
+! 
+! !!! Split each set of seed points using the plane defined by the
+! !!! parent branch and the centre of mass. Seed points get associated with NEW elements (ne+1,ne+2)
+!              call split_seed_points(map_seed_to_elem,ne_parent,ne,np_start,&
+!                   np_prnt_start,np_grnd_start,COFM,enough_points)
+! 
+! !!! check whether enough seed points remaining in BOTH seed groups for branching to be done
+! !!! (note: this could be improved to continue branching in one set of seeds)
+!              if(enough_points)then
+!                 do N = 1,2 !for each of the two new branches
+!                    ! Set up arrays for new element and node
+!                    ! after create_new_node the current element == ne and current node == np
+!                    call create_new_node(ne,ne_parent,np,np_start,.TRUE.)
+!                    ! find the centre of mass of seed points
+!                    call calculate_seed_cofm(map_seed_to_elem,ne,COFM)
+!                    ! Generate a branch directed towards the centre of mass. Returns location
+!                    ! of end node in candidate_xyz (adjusted below based on length and shape criteria)
+!                    call branch_to_cofm(map_seed_to_elem,ne,np_start,&
+!                         COFM,branch_fraction,length_limit,length_parent,shortest_length,&
+!                         candidate_xyz,make_branch)
+!                    node_xyz(1:3,np) = candidate_xyz(1:3) ! the new node location is as returned by 'branch_to_cofm'
+!                    call calc_branch_direction(ne) ! calculate direction of the new branch
+!                    elem_field(ne_length,ne) = distance_between_points(node_xyz(1,np_start),node_xyz(1,np))
+!                    ! Check whether this is a new parent branch or a terminal branch
+!                    if(make_branch.and.enough_points)then ! meets all criteria for continuing branching
+!                       num_next_parents = num_next_parents+1 ! increment the number of next parents
+!                       local_parent_temp(num_next_parents) = ne !records the elements that are parents
+!                    else ! this is a terminal branch
+!                       num_terminal = num_terminal+1 ! increment the number of terminal branches
+!                    endif
+!                 enddo !N (for both new branches)
+! 
+!                 if(limit_branching_angle)then
+!                    ! Check that the branch angles are not too large or too small
+!                    ! Correct such that branches stay in the original branching plane
+!                    call limit_branch_angles(ne,ne_parent,np,&
+!                         np_prnt_start,np_start,angle_max,angle_min)
+! 
+!                    internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                         vertex_xyz)
+!                    if(.not.internal)then ! halve the length, and make terminal
+!                       elem_field(ne_length,ne) = 0.5_dp*distance_between_points&
+!                            (node_xyz(1,np_start),node_xyz(1,np))
+!                       node_xyz(1:3,np) = node_xyz(1:3,np_start) + 0.5_dp*&
+!                            elem_field(ne_length,ne)*elem_direction(1:3,ne)
+!                       internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                            vertex_xyz)
+!                       kount = 0
+!                       do while(.not.internal)
+!                          kount = kount+1
+!                          call shorten_branch_and_children(ne_parent)
+!                          internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                               vertex_xyz)
+!                          if(kount.ge.3)then
+!                             call shorten_branch_and_children(elem_cnct(-1,1,ne_parent))
+!                             internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                                  vertex_xyz)
+!                          endif
+!                          if(kount.gt.5.and.(.not.internal))then
+!                             write(*,'('' WARNING: element'',i6,'' not internal'')') ne
+!                             internal = .true.
+!                          endif
+!                       enddo
+!                       if(inlist(ne,local_parent_temp))then ! set to be terminal
+!                          local_parent_temp(num_next_parents) = 0
+!                          num_next_parents = num_next_parents-1 ! decrement the number of next parents
+!                          num_terminal = num_terminal+1
+!                          nd_min = closest_seed_to_node_in_group(map_seed_to_elem,ne,np) ! closest seed point
+!                          map_seed_to_elem(nd_min) = 0 ! remove seed point from list
+!                          map_seed_to_space(nd_min) = ne ! recording element number
+! 
+!                          if(to_export) then
+!                            write(40,*) nd_min,ne
+!                          endif
+! 
+!                       endif
+!                    endif !.not.internal
+! 
+!                    internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np-1),&
+!                         vertex_xyz)
+!                    if(.not.internal)then ! halve the length, and halve the angle from parent
+!                       elem_field(ne_length,ne-1) = 0.5_dp*distance_between_points&
+!                            (node_xyz(1,np_start),node_xyz(1,np-1))
+!                       node_xyz(1:3,np-1) = node_xyz(1:3,np_start) + 0.5_dp*&
+!                            elem_field(ne_length,ne-1)*elem_direction(1:3,ne-1)
+!                       internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np-1),&
+!                            vertex_xyz)
+!                       do while(.not.internal)
+!                          kount = kount+1
+!                          call shorten_branch_and_children(ne_parent)
+!                          internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                               vertex_xyz)
+!                          if(kount.ge.3)then
+!                             call shorten_branch_and_children(elem_cnct(-1,1,ne_parent))
+!                             internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),&
+!                                  vertex_xyz)
+!                          endif
+!                          if(kount.gt.4.and.(.not.internal))then
+!                             write(*,'('' WARNING: element'',i6,'' not internal'')') ne-1
+!                             internal = .true.
+!                          endif
+!                       enddo
+!                       if(inlist(ne-1,local_parent_temp))then ! set to be terminal
+!                          do i = 1,num_next_parents
+!                             if(local_parent_temp(i).eq.ne-1)then
+!                                do j = i,num_next_parents-1
+!                                   local_parent_temp(j) = local_parent_temp(i+1)
+!                                enddo
+!                             endif
+!                          enddo
+!                          num_next_parents = num_next_parents-1 ! decrement the number of next parents
+!                          num_terminal = num_terminal+1
+!                          nd_min = closest_seed_to_node_in_group(map_seed_to_elem,ne-1,np-1) ! closest seed point
+!                          map_seed_to_elem(nd_min) = 0 ! remove seed point from list
+!                          map_seed_to_space(nd_min) = ne ! recording element number
+! 
+!                          if(to_export) then
+!                            write(40,*) nd_min,ne
+!                          endif
+!                       endif
+!                    endif ! .not.internal
+! 
+!                 endif
+! 
+!                 if(limit_branching_plane)then
+!                    ! Check the angle of rotation between child and parent branching planes.
+!                    ! If absolute angle is larger than a user-specified limit, adjust to be
+!                    ! the limit value. This is used for making sure that the CFD geometry turns out ok.
+!                    call check_branch_rotation_plane(map_seed_to_elem,ne,ne_grnd_parent,ne_parent, &
+!                         local_parent_temp,num_next_parents, &
+!                         np,np_start,np_prnt_start,np_grnd_start,num_terminal,rotation_limit)
+!                    internal = point_internal_to_surface(num_vertices,triangle,node_xyz(1:3,np),vertex_xyz)
+!                 endif
+! 
+!              else
+!                 write(*,*) 'terminal, not enough points',ne !!! never happens!!!
+!                 read(*,*)
+!                 ! Not enough seed points in the set during the split.
+!                 ! Find the closest seed point to node np_start, and remove from seeds
+!                 num_terminal = num_terminal+1 ! increment number of terminal branches
+!                 nd_min = closest_seed_to_node(map_seed_to_elem,np_start) ! closest seed point
+!                 map_seed_to_elem(nd_min) = 0 ! remove seed point from list
+!                 map_seed_to_space(nd_min) = ne ! record the element to data point mapping
+!              endif
+!           enddo ! for all current parent branches
+!           ! Copy the temporary list of branches to local_parent. These become the
+!           ! parent elements for the next branching
+!           local_parent(1:num_next_parents) = local_parent_temp(1:num_next_parents)
+!           ! Regroup the seed points with the closest current parent
+!           call group_seeds_with_branch(map_seed_to_elem,num_next_parents,num_seeds_from_elem,&
+!                num_terminal,local_parent,DISTANCE_LIMIT,.FALSE.)
+! 
+!        enddo ! while still parent branches
+! 
+!        write(*,'(I7,I8,I9)') ne_parent,num_seeds_in_space,num_terminal
+! 
+!     enddo ! for each initial parent
+! 
+!     if(to_export)then
+!       close(40)
+!     endif
+! 
+! !!! set new total numbers of nodes and elements
+!     call reallocate_node_elem_arrays(ne,np)
+!     num_nodes=np !highest node # in nr
+!     num_elems=ne !highest element # in nr
+! 
+! !!! update the tree connectivity
+!     call element_connectivity_1d
+! 
+! !!! calculate branch generations and orders
+!     call evaluate_ordering
+!     
+!     write(*,*) num_elems_new,num_elems
+!     write(*,*) num_nodes, num_nodes_new
+!    write(*,*) 'dellocate7'
 !!! deallocate temporary arrays
-    deallocate(vertex_xyz)
-    deallocate(triangle)
-    deallocate(local_parent_temp)
-    deallocate(local_parent)
-    deallocate(map_seed_to_elem)
-    deallocate(map_seed_to_space)
-    deallocate(num_seeds_from_elem)
+!    deallocate(triangle)
+!    deallocate(vertex_xyz)
+!        write(*,*) 'dellocate5'
+!    deallocate(local_parent_temp)!
+!        write(*,*) 'dellocate4'
+!    deallocate(local_parent)!
+!        write(*,*) 'dellocate3'
+!    deallocate(map_seed_to_elem)!
+!        write(*,*) 'dellocate2'
+!    deallocate(map_seed_to_space) !
+!     write(*,*) 'dellocate 1'
+!    
+!    deallocate(num_seeds_from_elem)
+!        write(*,*) 'dellocate'
+        
+        
 
     call enter_exit(sub_name,2)
+    
+    write(*,*) 'done with subroutine'
   end subroutine grow_tree
 
 

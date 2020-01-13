@@ -1071,16 +1071,14 @@ contains
 !
 !###################################################################################
 ! 
-  subroutine triangles_from_surface(num_triangles,num_vertices,surface_elems,triangle,vertex_xyz)
+  subroutine triangles_from_surface(num_triangles,num_vertices)
       
      !#This subroutine is called by make_data_grid subroutine.
      !#Application: to grow a grid in 2D surface.
      
      use diagnostics,only: enter_exit
-     use arrays,only: dp,num_elems_2d,elem_nodes_2d
-     integer,intent(in) :: surface_elems(:)
-     integer,allocatable :: triangle(:,:)
-     real(dp),allocatable :: vertex_xyz(:,:)
+     use arrays,only: dp,num_elems_2d,elem_nodes_2d,triangle,vertex_xyz
+
      integer,parameter :: ndiv = 3
      integer :: i,j,ne,num_surfaces,num_triangles,num_tri_vert,num_vertices
      integer :: index1,index2,nmax_1,nmax_2,step_1,step_2,nvertex_row
@@ -1090,11 +1088,13 @@ contains
      character(len=60) :: sub_name = 'triangles_from_surface'
      call enter_exit(sub_name,1)
      
+           write(*,*) 'reallocating arrays'
      if(.not.allocated(triangle)) allocate(triangle(3,2*num_elems_2d*ndiv**2))
      if(.not.allocated(vertex_xyz)) allocate(vertex_xyz(3,num_elems_2d*(ndiv+1)**2))
+     write(*,*) 'reallocated'
+
      triangle = 0
      vertex_xyz = 0.0_dp
-     num_surfaces = count(surface_elems.ne.0)
      num_triangles = 0
      num_vertices = 0
      num_tri_vert = 0 
@@ -1196,6 +1196,7 @@ contains
 
      write(*,'('' Made'',I8,'' triangles to cover'',I6,'' surface elements'')') &
            num_triangles,num_elems_2d
+           
 
      call enter_exit(sub_name,2)
   
@@ -1204,14 +1205,13 @@ contains
 ! 
 !###################################################################################
 ! 
-  subroutine make_data_grid(surface_elems,spacing,to_export,filename,groupname)
+  subroutine make_data_grid(spacing,to_export,filename,groupname)
   !DEC$ ATTRIBUTES DLLEXPORT,ALIAS:"SO_MAKE_DATA_GRID" :: MAKE_DATA_GRID
 
-     use arrays,only: dp,data_xyz,data_weight,num_data
+     use arrays,only: dp,data_xyz,data_weight,num_data,triangle,vertex_xyz,num_elems_2d
      use mesh_utilities,only: volume_internal_to_surface,point_internal_to_surface
      use diagnostics,only: enter_exit
      ! Parameters
-     integer,intent(in) :: surface_elems(:)
      real(dp),intent(in) :: spacing
      logical,intent(in) :: to_export
      character(len=*),intent(in) :: filename
@@ -1219,8 +1219,7 @@ contains
 
      ! Local Variables
      real(dp) :: max_bound(3),min_bound(3),scale_mesh,translate(3)
-     integer,allocatable :: triangle(:,:)
-     real(dp),allocatable :: data_temp(:,:),vertex_xyz(:,:)
+     real(dp),allocatable :: data_temp(:,:)
      real(dp) :: boxrange(3),cofm_surfaces(3),offset=-2.0_dp,point_xyz(3)
      integer :: i,j,k,ne,nj,nline,nn,num_data_estimate,num_triangles,num_vertices
      logical :: internal
@@ -1229,8 +1228,9 @@ contains
      character(len=60) :: sub_name = 'make_data_grid'
 
      call enter_exit(sub_name,1)
-
-     call triangles_from_surface(num_triangles,num_vertices,surface_elems,triangle,vertex_xyz)
+     
+     
+     call triangles_from_surface(num_triangles,num_vertices)
 
      if(offset.gt.0.0_dp)then
    !!! generate within a scaled mesh, then return to original size afterwards
@@ -1273,6 +1273,7 @@ contains
                   if(num_data.le.num_data_estimate)then
                      data_xyz(:,num_data) = point_xyz
                   else
+                     write(*,*)'about to do real'
                      num_data_estimate = num_data_estimate + 1000
                      allocate(data_temp(3,num_data-1))
                      data_temp = data_xyz ! copy to temporary array
@@ -1385,10 +1386,10 @@ contains
       enddo
       close(10)
       endif
-
+      write(*,*) 'is this the issue'
       deallocate(triangle)
       deallocate(vertex_xyz)
-
+      write(*,*) 'is this the issue 2' 
       call enter_exit(sub_name,2)
 
       end subroutine make_data_grid

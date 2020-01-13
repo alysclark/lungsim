@@ -585,6 +585,7 @@ subroutine characteristic_admittance(no_freq,char_admit,prop_const,harmonic_scal
       narrow_factor=0.55_dp
       prune_rad=0.25_dp
       prune_fraction=0.5_dp
+    elseif(remodeling_grade.eq.1)then
     else
       write(*,*) 'Remodeling grade out of range or not implemented yet.'
       call exit(1)
