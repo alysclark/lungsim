@@ -1109,7 +1109,7 @@ subroutine calc_press_area(grav_vect,KOUNT,depvar_at_node,prq_solution,&
           if(elem_field(ne_group,ne).eq.0.0_dp.and.elem_ordrs(no_sord,ne).eq.2.and.counter1/10.le.prune_fraction) then
           !if(elem_field(ne_group,ne).eq.0.0_dp.and.R0.lt.prune_rad.and.counter1/10.le.prune_fraction) then !only applying on arteries
             !if(elem_ordrs(no_sord,ne).gt.1)then
-              write(*,*) ne,nn,elem_ordrs(no_sord,ne),R0
+            !  write(*,*) ne,nn,elem_ordrs(no_sord,ne),R0
             !endif
             if(nn.eq.1) then
               elem_field(ne_radius_in,ne)=0.02_dp
